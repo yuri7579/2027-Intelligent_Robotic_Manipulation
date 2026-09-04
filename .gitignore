@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# ROS 2 build artifacts (not used in this class, but just in case)
+build/
+install/
+log/
+
+# editors / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
