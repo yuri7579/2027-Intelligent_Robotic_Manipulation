@@ -58,6 +58,12 @@ pip install numpy
 수업 코드는 `colcon build` 없이 **Python에서 ROS 2 모듈을 직접 사용하는 경량 구조**를 쓴다.
 패키지는 `omni_sim`(master) / `omy_sim`(slave) / `omy_teleop`(연결) 세 개로 나눈다.
 
+Ubuntu 24.04가 아닌 머신(예: 20.04 워크스테이션)에서는 [`docker/`](docker/)로 같은 Jazzy 환경을 띄울 수 있다.
+```bash
+./docker/build.sh                                 # 최초 1회
+./docker/run.sh python3 omy_teleop/omyTeleop.py   # 실행 (X11 + NVIDIA GPU 패스스루)
+```
+
 ---
 
 ## 로봇

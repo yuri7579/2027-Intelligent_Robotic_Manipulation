@@ -61,6 +61,13 @@ source /opt/ros/$ROS_DISTRO/setup.bash
 cd <repo>/0904
 ```
 
+Ubuntu 24.04가 아닌 머신이면 [`docker/`](../docker/) 컨테이너로 동일 환경을 쓸 수 있다.
+```bash
+./docker/build.sh                                 # 최초 1회 (irm:jazzy 이미지)
+./docker/run.sh python3 omy_teleop/omyTeleop.py   # 과제 실행
+./docker/run.sh                                   # 셸 진입 (자동으로 /workspace/0904)
+```
+
 ### 전체 실행 (과제 데모)
 ```bash
 python3 omy_teleop/omyTeleop.py
@@ -167,11 +174,23 @@ q_slave[i] = clip( sign[i] * scale[i] * (q_master[i] - master_offset[i]) + slave
   퍼블리시하도록만 바꾸면 되고, 나머지 코드는 그대로 쓸 수 있다.
   (`omni_rviz.launch.py`를 `gui:=false`로 실행)
 
-### 검증한 것
-- `omyVar` / `omniVar`의 조인트 원점·축·리밋 값이 URDF와 일치 (스크립트로 대조)
-- OMY FK: `q = 0`에서 URDF 조인트 원점 합과 일치
-- OMY 해석적 Jacobian vs FK 수치미분: 랜덤 200개 자세에서 최대 오차 3e-7
-- 매핑 경로: 마스터가 조인트 순서를 섞어 보내도 `joint1..joint6`에 올바르게 전달됨
+### 검증한 것 (ROS 2 Jazzy 컨테이너에서 실제 실행)
+- 런치: `/omni/joint_states`, `/omni/robot_description`, `/omy/joint_states`,
+  `/omy/robot_description` 토픽 생성 확인, `frame_prefix`가 `omni/` / `omy/`로 적용됨
+- 텔레옵 파이프라인: 마스터 → `/omy/joint_states`로 조인트 값 그대로 전달, 100 Hz 유지
+  (슬라이더 GUI는 10 Hz로 퍼블리시)
+- **FK vs tf**: 랜덤 8개 자세에서 `OmniKinematics.fk_pose` ↔ `omni/base→omni/stylus`,
+  `OmyKinematics.fk_pose` ↔ `omy/world→omy/end_effector_link` 최대 오차 **3.3e-16 m**
+- 해석적 Jacobian vs FK 수치미분: 두 로봇 모두 최대 오차 1e-7 이하
+- GUI 실행: RViz 2개 + 슬라이더 창 정상 렌더링, 메쉬 로딩 에러 없음 (NVIDIA GL)
+- 매핑: 마스터가 조인트 순서를 섞어 보내도 `joint1..joint6`에 올바르게 전달됨
+
+### Omni 기구학 규약 주의
+`OmniKinematics.fk()`는 **URDF 프레임 기준**이라 RViz/tf와 일치한다.
+연구실 ROS 1 코드에서 쓰던 modified-DH 테이블(`omniVar.dhparam`, `OmniKinematics.fk_dh`)은
+Geomagic 장치 자체의 프레임 규약이라 URDF의 `base` / `stylus` 프레임과 일치하지 않는다.
+(같은 자세에서 DH는 `[-0.156, 0.016, 0.063]`, URDF/tf는 `[-0.017, -0.165, 0.066]`)
+tf와 맞춰야 하는 계산에는 `fk()`를, 기존 코드와 비교할 때만 `fk_dh()`를 쓸 것.
 
 ---
 
@@ -183,6 +202,8 @@ q_slave[i] = clip( sign[i] * scale[i] * (q_master[i] - master_offset[i]) + slave
 | 로봇은 보이는데 메쉬가 하얀 박스 / 안 보임 | 리포지토리 경로에 공백·한글이 있으면 확인. `load_urdf()`가 percent-encoding 하지만 경로는 ASCII 권장 |
 | 슬라이더를 움직여도 OMY가 안 움직임 | 텔레옵 노드가 떠 있는지 확인 (`ros2 node list`에 `/omy_joint_teleop`) |
 | `ModuleNotFoundError: omni_sim` | `0904/` 디렉토리에서 실행하거나, `omyTeleop.py`처럼 진입점 스크립트로 실행 |
+| `ModuleNotFoundError: rclpy` | ROS 2가 없는 환경. `source /opt/ros/$ROS_DISTRO/setup.bash` 하거나 [`docker/`](../docker/) 컨테이너 사용 |
+| `ros2 topic pub`으로 테스트하면 로봇이 안 움직임 | **`ros2 topic pub`은 `header.stamp=0`을 보내고 robot_state_publisher가 그런 메시지를 버린다.** 테스트용 퍼블리셔에서도 `header.stamp`를 채울 것 (`node.get_clock().now().to_msg()`) |
 | RViz 창이 겹쳐서 뜸 | `omni.rviz` / `omy.rviz`의 `Window Geometry`의 `X`, `Y` 값 조정 |
 
 ---
