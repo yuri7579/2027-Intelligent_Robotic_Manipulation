@@ -13,6 +13,10 @@ DGIST · Prof. Minho Hwang (SurgLab) · 2026 Fall
 
 > 각 폴더의 `README.md`에 실행 방법 · 구조 · 구현 메모가 정리되어 있음.
 
+작업 이어받을 때는 [`ai/README.md`](ai/README.md)를 먼저 볼 것 — 리포 구조, 토픽/프레임 규약,
+겪은 함정, 검증 방법, 다음 주차 할 일이 정리된 인수인계 문서다.
+`ai/verify.sh`는 기구학이 tf와 일치하는지 실측 검증한다.
+
 ---
 
 ## 강의 일정
